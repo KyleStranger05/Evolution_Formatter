@@ -1,0 +1,111 @@
+Option Explicit
+Public WBMAIN As Workbook
+Public WSmain As Worksheet
+Public WSvl As Worksheet
+Public WSNew As Worksheet
+Sub Main()
+
+Dim OBdate As String, amount As String, yesno As String, yesno2 As String ' All Variables
+Dim OLDr As Long, OLDc As Long, NEWr As Long, NEWc As Long, sheetName As String
+Dim VLookupResult As Variant, complexName As String
+Dim FilePath As String
+
+OLDc = 2  ' First Sheet Column
+NEWr = 1  ' New Sheet Row
+NEWc = 1  ' New Sheet Column
+
+FilePath = ThisWorkbook.path ' File path for this workbook
+
+Set WBMAIN = Workbooks("EVO_MOD") ' set WBMAIN to the entire workbook
+Set WSmain = WBMAIN.Worksheets("EVO MOD FORM") ' set WSmain to the first worksheet
+Set WSvl = WBMAIN.Worksheets("Vlookup") ' set the Vlookup for the acc no.
+
+
+complexName = WSmain.Cells(2, 2) ' Complex Name Cell
+OBdate = WSmain.Cells(1, 2) ' Date Cell
+
+WBMAIN.Activate ' Activates WBmain
+sheetName = "EVO_" + complexName ' Sheet Name
+Sheets.Add.Name = sheetName
+Set WSNew = WBMAIN.Worksheets(sheetName) ' Set WSNEW to the new sheetName
+
+For OLDr = 13 To 200 ' for 200 lines in the main sheet
+  If WSmain.Cells(OLDr, 2) = "" Then GoTo exitthis
+  If WSmain.Cells(OLDr, 4) = "" And WSmain.Cells(OLDr, 5) = "" Then GoTo exitthis
+    If WSmain.Cells(OLDr, OLDc) <> 0 Then
+        VLookupResult = Application.VLookup(WSmain.Cells(OLDr, OLDc), WSvl.Range("A2:B300"), 2, False)
+        If IsError(VLookupResult) Then
+            VLookupResult = InputBox("Please enter a new account number. The account number for : " + WSmain.Cells(OLDr, 3) + " was not found", "Account Not Found", "1000>100")
+        End If
+        
+        'Collect amount and detirmine if debit or credit
+        If Len(Trim(WSmain.Cells(OLDr, 4).Value2)) <> 0 Then
+            amount = WSmain.Cells(OLDr, 4) ' If Credit is Empty do
+            yesno = "Y"
+            yesno2 = "N"
+        ElseIf Len(Trim(WSmain.Cells(OLDr, 5).Value2)) <> 0 Then ' if Debit is empty , do
+            amount = WSmain.Cells(OLDr, 5)
+            yesno = "N"
+            yesno2 = "Y"
+        Else
+            GoTo exitthis ' if both cells are blank , skip to exitthis
+        End If
+            
+        WSNew.Cells(NEWr, 1) = OBdate                   ' Assigning 2 lines of code that prints to WSNew
+        WSNew.Cells(NEWr, 2) = "OB " + OBdate
+        WSNew.Cells(NEWr, 3) = "OB "
+        WSNew.Cells(NEWr, 4) = amount
+        WSNew.Cells(NEWr, 5) = "N"
+        WSNew.Cells(NEWr, 8) = "0"
+        WSNew.Cells(NEWr, 10) = VLookupResult
+        WSNew.Cells(NEWr, 11) = yesno
+        
+        NEWr = NEWr + 1
+        
+        WSNew.Cells(NEWr, 1) = OBdate
+        WSNew.Cells(NEWr, 2) = "OB " + OBdate
+        WSNew.Cells(NEWr, 3) = "OB"
+        WSNew.Cells(NEWr, 4) = amount
+        WSNew.Cells(NEWr, 5) = "N"
+        WSNew.Cells(NEWr, 8) = "0"
+        WSNew.Cells(NEWr, 10) = "9990>001"
+        WSNew.Cells(NEWr, 11) = yesno2
+        
+        NEWr = NEWr + 1
+    End If
+exitthis:
+Next OLDr
+
+' Start creating CSV
+
+With Application
+.EnableEvents = False
+.ScreenUpdating = False
+End With
+
+'Check if Directory exists
+' Dim fso As New FileSystemObject
+Dim path As String
+Dim mycsvfilename As String
+
+mycsvfilename = ThisWorkbook.path & "\EvolutionCSV"
+
+
+'WBMAIN.Sheets(sheetName).Activate
+'ActiveSheet.Copy
+'Set WSNew = ActiveWorkbook
+'With WSNew
+'.SaveAs Filename:=mycsvfilename, FileFormat:=xlCSV, CreateBackup:=False
+' .Close
+'End With
+'SetAttr mycsvfilename, vbReadOnly
+'WBMAIN.Sheets("CSVexport").Delete
+'WBMAIN.Worksheets("Actions").Activate
+'err:
+
+With Application
+.EnableEvents = True
+.ScreenUpdating = True
+End With
+
+End Sub
